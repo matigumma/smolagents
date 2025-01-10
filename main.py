@@ -1,4 +1,8 @@
+import os
 from smolagents import CodeAgent, DuckDuckGoSearchTool, HfApiModel
+from huggingface_hub import login
+
+login(os.getenv("HF_API_KEY"))
 
 agent = CodeAgent(tools=[DuckDuckGoSearchTool()], model=HfApiModel())
 
