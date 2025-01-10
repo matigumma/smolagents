@@ -2,7 +2,10 @@ import os
 from smolagents import CodeAgent, DuckDuckGoSearchTool, HfApiModel
 from huggingface_hub import login
 
-login(os.getenv("HF_API_KEY"))
+hf_api_key = os.getenv("HF_API_KEY")
+if hf_api_key is None:
+    raise EnvironmentError("HF_API_KEY environment variable not set.")
+login(hf_api_key)
 
 agent = CodeAgent(tools=[DuckDuckGoSearchTool()], model=HfApiModel())
 
