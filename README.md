@@ -1,4 +1,4 @@
-# Python smolagents in action
+# Playing with smolagents
 
 Este repositorio contiene un script de Python que implementa un sistema multiagente. Utiliza varios modelos y herramientas 
 El script aprovecha los modelos de Hugging Face y el modelo LiteLLM de OpenAI para crear agentes capaces de ejecutar codigo creado por el mismo agente.
@@ -15,13 +15,20 @@ El script aprovecha los modelos de Hugging Face y el modelo LiteLLM de OpenAI pa
 
 
 ## How?
+1. UV package manager:
+   [UV install](https://docs.astral.sh/uv/getting-started/installation/#installation-methods)
 
-1. Install the required packages:
+1. Prepare environment:
+   ```bash
+   uv venv --python 3.11 && source .venv/bin/activate && uv pip install -r requirements.txt
+   ```
+
+2. Install the required packages:
    ```bash
    pip install -r requirements.txt
    ```
 
-2. Create a `.env` file in the root directory and add your API tokens:
+3. Create a `.env` file in the root directory and add your API tokens:
    ```plaintext
    HF_API_TOKEN=your_hugging_face_api_token
    OPENAI_API_KEY=your_openai_api_key
