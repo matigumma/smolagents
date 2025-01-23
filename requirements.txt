@@ -1,3 +1,5 @@
 smolagents
 transformers>=4.36.0
 huggingface_hub>=0.25.1
+litellm==1.59.3
+bs4==0.0.2
