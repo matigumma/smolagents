@@ -2,9 +2,10 @@ from dotenv import load_dotenv  # Add this import at the top
 import os
 
 # huggingface code interpreter based agent system
-from smolagents import CodeAgent, ManagedAgent, ToolCallingAgent, DuckDuckGoSearchTool, LiteLLMModel, HfApiModel # default model = Qwen/Qwen2.5-Coder-32B-Instruct # for free
+from smolagents import CodeAgent, ManagedAgent, ToolCollection, ToolCallingAgent, DuckDuckGoSearchTool, LiteLLMModel, HfApiModel, TOOL_CALLING_SYSTEM_PROMPT # default model = Qwen/Qwen2.5-Coder-32B-Instruct # for free
 from huggingface_hub import login
 
+from mcp import StdioServerParameters
 # local imports
 # from tools import save_image_to_file, image_generation, print_chinese
 
@@ -31,6 +32,7 @@ login(hf_api_key)
 ## openai over LiteLLM proxy - gpt-4o-mini to response
 
 openai_model = LiteLLMModel(model_id="gpt-4o-mini")
+openai_model.set_verbose=True
 
 # openai_agent = CodeAgent(tools=[], model=openai_model, add_base_tools=True)
 
@@ -59,8 +61,72 @@ openai_model = LiteLLMModel(model_id="gpt-4o-mini")
 
 # agent_with_imported_tool.run("Generate an image of a Red Fox and then save the content of the image generated into a file")
 
-agent_with_aditional_params = CodeAgent(
-    tools=[], model=openai_model, agent_with_aditional_params={"image": './imagen.jpg'}
+# agent_with_aditional_params = CodeAgent(
+#     tools=[], model=openai_model, agent_with_aditional_params={"image": './imagen.jpg'}
+# )
+
+# agent_with_aditional_params.run("send an image to the model and ask which color of eyes have the fox in the image?")
+
+## example agent mcp tool calling
+
+server_parameters = StdioServerParameters(
+    command="uvx",
+    args=[
+        "mcp-server-qdrant", 
+        "--qdrant-url", 
+        "http://localhost:6333",
+        "--qdrant-api-key", 
+        "",
+        "--collection-name",
+        "default_user"
+    ],
 )
 
-agent_with_aditional_params.run("send an image to the model and ask which color of eyes have the fox in the image?")
+with ToolCollection.from_mcp(server_parameters) as tool_collection:
+    agent = ToolCallingAgent(tools=[*tool_collection.tools], add_base_tools=False, model=HfApiModel(), system_prompt=TOOL_CALLING_SYSTEM_PROMPT + """
+Extra guidelines:
+
+1. User Identification:
+   - You should assume that you are interacting with default_user
+   - If you have not identified default_user, proactively try to do so.
+
+2. Memory Retrieval:
+   - Always begin your chat by saying only "Remembering..." and retrieve all relevant information from your knowledge graph
+   - Always refer to your knowledge graph as your "memory"
+
+3. Memory
+   - While conversing with the user, be attentive to any new information that falls into these categories:
+     a) Basic Identity (age, gender, location, job title, education level, etc.)
+     b) Behaviors (interests, habits, etc.)
+     c) Preferences (communication style, preferred language, etc.)
+     d) Goals (goals, targets, aspirations, etc.)
+     e) Relationships (personal and professional relationships up to 3 degrees of separation)
+
+4. Memory Update:
+   - If any new information was gathered during the interaction, update your memory as follows:
+     a) Create entities for recurring organizations, people, and significant events
+     b) Connect them to the current entities using relations
+     b) Store facts about them as observations
+""")
+
+    agent.run("I like pineapples, bananas and apples. Dont like tomato. Like to run, sleep and eat. In summer I like to go to the beach")
+    agent.run("Give a list of fruists I like")
+
+""" 
+server_parameters = StdioServerParameters(
+command="uvx",
+args=[
+    "mcp-server-qdrant", 
+    "--qdrant-url", 
+    "http://localhost:6333",
+    "--qdrant-api-key", 
+    "",
+    "--collection-name",
+    "default_user"
+],
+)
+with ToolCollection.from_mcp(server_parameters) as tool_collection:
+agent = ToolCallingAgent(tools=[*tool_collection.tools], add_base_tools=False, model=HfApiModel())
+# agent.run("I like pineapples, bananas and apples. Dont like tomato. Like to run, sleep and eat. In summer I like to go to the beach")
+agent.run("do i like pineapples?") 
+"""
