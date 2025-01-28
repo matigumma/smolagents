@@ -112,24 +112,24 @@ openai_model.set_verbose=True
 #     # agent.run("I like pineapples, bananas and apples. Dont like tomato. Like to run, sleep and eat. In summer I like to go to the beach")
 #     agent.run("tellme What I like?")
 
-""" 
-server_parameters = StdioServerParameters(
-command="uvx",
-args=[
-    "mcp-server-qdrant", 
-    "--qdrant-url", 
-    "http://localhost:6333",
-    "--qdrant-api-key", 
-    "",
-    "--collection-name",
-    "default_user"
-],
-)
-with ToolCollection.from_mcp(server_parameters) as tool_collection:
-agent = ToolCallingAgent(tools=[*tool_collection.tools], add_base_tools=False, model=HfApiModel())
-# agent.run("I like pineapples, bananas and apples. Dont like tomato. Like to run, sleep and eat. In summer I like to go to the beach")
-agent.run("do i like pineapples?") 
-"""
+
+# server_parameters = StdioServerParameters(
+# command="uvx",
+# args=[
+#     "mcp-server-qdrant", 
+#     "--qdrant-url", 
+#     "http://localhost:6333",
+#     "--qdrant-api-key", 
+#     "",
+#     "--collection-name",
+#     "default_user"
+# ],
+# )
+# with ToolCollection.from_mcp(server_parameters) as tool_collection:
+# agent = ToolCallingAgent(tools=[*tool_collection.tools], add_base_tools=False, model=HfApiModel())
+# # agent.run("I like pineapples, bananas and apples. Dont like tomato. Like to run, sleep and eat. In summer I like to go to the beach")
+# agent.run("do i like pineapples?") 
+
 
 ## multi-agent system
 
@@ -155,6 +155,6 @@ manager_agent = CodeAgent(
     managed_agents=[magent],
 )
 
-answer = manager_agent.run("If LLM training continues to scale up at the current rhythm until 2030, what would be the electric power in GW required to power the biggest training runs by 2030? What would that correspond to, compared to some countries? Please provide a source for any numbers used.")
+answer = manager_agent.run("")
 
 print(answer)
