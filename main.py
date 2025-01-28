@@ -2,7 +2,7 @@ from dotenv import load_dotenv  # Add this import at the top
 import os
 
 # huggingface code interpreter based agent system
-from smolagents import CodeAgent, ManagedAgent, ToolCollection, ToolCallingAgent, DuckDuckGoSearchTool, LiteLLMModel, HfApiModel, TOOL_CALLING_SYSTEM_PROMPT # default model = Qwen/Qwen2.5-Coder-32B-Instruct # for free
+from smolagents import CodeAgent, MultiStepAgent, ManagedAgent, ToolCollection, ToolCallingAgent, DuckDuckGoSearchTool, LiteLLMModel, HfApiModel, TOOL_CALLING_SYSTEM_PROMPT # default model = Qwen/Qwen2.5-Coder-32B-Instruct # for free
 from huggingface_hub import login
 
 from mcp import StdioServerParameters
@@ -109,8 +109,8 @@ Extra guidelines:
      b) Store facts about them as observations
 """)
 
-    agent.run("I like pineapples, bananas and apples. Dont like tomato. Like to run, sleep and eat. In summer I like to go to the beach")
-    agent.run("Give a list of fruists I like")
+    # agent.run("I like pineapples, bananas and apples. Dont like tomato. Like to run, sleep and eat. In summer I like to go to the beach")
+    agent.run("tellme What I like?")
 
 """ 
 server_parameters = StdioServerParameters(
@@ -130,3 +130,20 @@ agent = ToolCallingAgent(tools=[*tool_collection.tools], add_base_tools=False, m
 # agent.run("I like pineapples, bananas and apples. Dont like tomato. Like to run, sleep and eat. In summer I like to go to the beach")
 agent.run("do i like pineapples?") 
 """
+
+## ManagedAgent
+
+
+msagent = MultiStepAgent(
+    tools=[],
+    model=HfApiModel(),
+)
+
+magent = ManagedAgent(
+    agent=msagent,
+    name="Managed Agent",
+    description="A managed agent for handling complex tasks",
+    additional_prompting="Please provide more details about your request.",
+    provide_run_summary=True,
+    managed_agent_prompt="Managed Agent: {name} is ready to assist you. Please provide your task or question.",
+)
