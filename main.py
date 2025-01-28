@@ -69,48 +69,48 @@ openai_model.set_verbose=True
 
 ## example agent mcp tool calling
 
-server_parameters = StdioServerParameters(
-    command="uvx",
-    args=[
-        "mcp-server-qdrant", 
-        "--qdrant-url", 
-        "http://localhost:6333",
-        "--qdrant-api-key", 
-        "",
-        "--collection-name",
-        "default_user"
-    ],
-)
+# server_parameters = StdioServerParameters(
+#     command="uvx",
+#     args=[
+#         "mcp-server-qdrant", 
+#         "--qdrant-url", 
+#         "http://localhost:6333",
+#         "--qdrant-api-key", 
+#         "",
+#         "--collection-name",
+#         "default_user"
+#     ],
+# )
 
-with ToolCollection.from_mcp(server_parameters) as tool_collection:
-    agent = ToolCallingAgent(tools=[*tool_collection.tools], add_base_tools=False, model=HfApiModel(), system_prompt=TOOL_CALLING_SYSTEM_PROMPT + """
-Extra guidelines:
+# with ToolCollection.from_mcp(server_parameters) as tool_collection:
+#     agent = ToolCallingAgent(tools=[*tool_collection.tools], add_base_tools=False, model=HfApiModel(), system_prompt=TOOL_CALLING_SYSTEM_PROMPT + """
+# Extra guidelines:
 
-1. User Identification:
-   - You should assume that you are interacting with default_user
-   - If you have not identified default_user, proactively try to do so.
+# 1. User Identification:
+#    - You should assume that you are interacting with default_user
+#    - If you have not identified default_user, proactively try to do so.
 
-2. Memory Retrieval:
-   - Always begin your chat by saying only "Remembering..." and retrieve all relevant information from your knowledge graph
-   - Always refer to your knowledge graph as your "memory"
+# 2. Memory Retrieval:
+#    - Always begin your chat by saying only "Remembering..." and retrieve all relevant information from your knowledge graph
+#    - Always refer to your knowledge graph as your "memory"
 
-3. Memory
-   - While conversing with the user, be attentive to any new information that falls into these categories:
-     a) Basic Identity (age, gender, location, job title, education level, etc.)
-     b) Behaviors (interests, habits, etc.)
-     c) Preferences (communication style, preferred language, etc.)
-     d) Goals (goals, targets, aspirations, etc.)
-     e) Relationships (personal and professional relationships up to 3 degrees of separation)
+# 3. Memory
+#    - While conversing with the user, be attentive to any new information that falls into these categories:
+#      a) Basic Identity (age, gender, location, job title, education level, etc.)
+#      b) Behaviors (interests, habits, etc.)
+#      c) Preferences (communication style, preferred language, etc.)
+#      d) Goals (goals, targets, aspirations, etc.)
+#      e) Relationships (personal and professional relationships up to 3 degrees of separation)
 
-4. Memory Update:
-   - If any new information was gathered during the interaction, update your memory as follows:
-     a) Create entities for recurring organizations, people, and significant events
-     b) Connect them to the current entities using relations
-     b) Store facts about them as observations
-""")
+# 4. Memory Update:
+#    - If any new information was gathered during the interaction, update your memory as follows:
+#      a) Create entities for recurring organizations, people, and significant events
+#      b) Connect them to the current entities using relations
+#      b) Store facts about them as observations
+# """)
 
-    # agent.run("I like pineapples, bananas and apples. Dont like tomato. Like to run, sleep and eat. In summer I like to go to the beach")
-    agent.run("tellme What I like?")
+#     # agent.run("I like pineapples, bananas and apples. Dont like tomato. Like to run, sleep and eat. In summer I like to go to the beach")
+#     agent.run("tellme What I like?")
 
 """ 
 server_parameters = StdioServerParameters(
@@ -131,14 +131,15 @@ agent = ToolCallingAgent(tools=[*tool_collection.tools], add_base_tools=False, m
 agent.run("do i like pineapples?") 
 """
 
-## ManagedAgent
+## multi-agent system
 
 
-msagent = MultiStepAgent(
-    tools=[],
+msagent = ToolCallingAgent(
+    tools=[DuckDuckGoSearchTool()],
     model=HfApiModel(),
+    max_steps=1,
 )
-
+# We then wrap this agent into a ManagedAgent 
 magent = ManagedAgent(
     agent=msagent,
     name="Managed Agent",
@@ -147,3 +148,13 @@ magent = ManagedAgent(
     provide_run_summary=True,
     managed_agent_prompt="Managed Agent: {name} is ready to assist you. Please provide your task or question.",
 )
+# that will make it callable by its manager agent
+manager_agent = CodeAgent(
+    tools=[],
+    model=HfApiModel(),
+    managed_agents=[magent],
+)
+
+answer = manager_agent.run("If LLM training continues to scale up at the current rhythm until 2030, what would be the electric power in GW required to power the biggest training runs by 2030? What would that correspond to, compared to some countries? Please provide a source for any numbers used.")
+
+print(answer)
