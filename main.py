@@ -9,7 +9,19 @@ from mcp import StdioServerParameters
 # local imports
 # from tools import save_image_to_file, image_generation, print_chinese
 
+# from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+# from opentelemetry.sdk.trace.export import BatchSpanProcessor   
 
+from openinference.instrumentation.smolagents import SmolagentsInstrumentor
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.trace.export import ConsoleSpanExporter, SimpleSpanProcessor
+
+endpoint = "http://0.0.0.0:6006/v1/traces"
+trace_provider = TracerProvider()
+trace_provider.add_span_processor(SimpleSpanProcessor(OTLPSpanExporter(endpoint)))
+
+SmolagentsInstrumentor().instrument(tracer_provider=trace_provider)
 
 load_dotenv()
 
@@ -155,6 +167,6 @@ manager_agent = CodeAgent(
     managed_agents=[magent],
 )
 
-answer = manager_agent.run("")
+answer = manager_agent.run("how many letters cand represent with 4 bits?")
 
 print(answer)

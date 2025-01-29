@@ -25,7 +25,7 @@ El script aprovecha los modelos de Hugging Face y el modelo LiteLLM de OpenAI pa
 
 2. Install the required packages:
    ```bash
-   pip install -r requirements.txt
+   uv pip install -r requirements.txt
    ```
 
 3. Create a `.env` file in the root directory and add your API tokens:
@@ -36,10 +36,18 @@ El script aprovecha los modelos de Hugging Face y el modelo LiteLLM de OpenAI pa
 
 ## Usage
 
+First Telemetry:
+
+```bash
+uv run python -m phoenix.server.main serve
+```
+
+then
+
 Run the script using:
 
 ```bash
-python main.py
+uv run main.py
 ```
 
 
