@@ -51,3 +51,4 @@ uv run main.py
 ```
 
 
+memory loop is wrong driven .

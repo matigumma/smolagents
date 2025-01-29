@@ -88,7 +88,7 @@ class Mind:
         await memory_system.store_memory(emotional_thought)
         await memory_system.store_memory(rational_thought)
 
-        relevant_memories = await memory_system.retrieve_relevant_memories(context, num_memories=3, similarity_threshold=0.9)
+        relevant_memories = await memory_system.retrieve_relevant_memories(context, num_memories=3, similarity_threshold=0.7)
 
         print(colored(f"\n Updating conscious state", "magenta"))
 
