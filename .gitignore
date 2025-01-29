@@ -6,6 +6,7 @@ __pycache__/
 *.so
 .Python
 build/
+mind_logs/*
 develop-eggs/
 bin/
 dist/

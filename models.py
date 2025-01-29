@@ -19,11 +19,28 @@ class Thought(BaseModel):
     emotion: EmotionalState = Field(description="The emotional state associated with this thought")
     associations: List[str] = Field(description="Associations to other thoughts")
 
+    def to_dict(self):
+        return {
+            'content': self.content,
+            'source': self.source,
+            'intensity': self.intensity,
+            'emotion': self.emotion,
+            'associations': self.associations,
+        }
+
 class Question(BaseModel):
     content: str = Field(description="The content of the question")
     source: str = Field(description="Which part of mind generated it")
     importance: float = Field(description="How important is this question, between 0 and 1")
     context: str = Field(description="The context in which this question was generated")
+
+    def to_dict(self):
+        return {
+            'content': self.content,
+            'source': self.source,
+            'importance': self.importance,
+            'context': self.context,
+        }
 
 class ConsciousState(BaseModel):
     active_thoughts: List[Thought] = Field(description="Currently active thoughts in consciousness")
@@ -38,6 +55,16 @@ class Belief(BaseModel):
     counter_thoughts: List[str] = Field(description="References to thoughts that challenge this belief")
     last_updated: float = Field(description="Timestamp of last update")
     stability: float = Field(description="Stability of belief (0-1)")
+    
+    def to_dict(self):
+        return {
+            "statement": self.statement,
+            "confidence": self.confidence,
+            "supporting_thoughts": self.supporting_thoughts,
+            "counter_thoughts": self.counter_thoughts,
+            "last_updated": self.last_updated,
+            "stability": self.stability
+        }
 
 class Conclusion(BaseModel):
     statement: str = Field(description="The conclusion statement")

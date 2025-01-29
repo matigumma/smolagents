@@ -2,7 +2,7 @@ import time
 from typing import Dict
 from litellm import OpenAI
 from termcolor import colored
-from mind import MindComponent, MindLogger
+from components import MindComponent, MindLogger
 from models import Belief
 
 
@@ -28,8 +28,8 @@ class BeliefSystem(MindComponent):
     async def evaluate_beliefs(self, context: Dict):
         """Evaluate current thoughts and update beliefs"""
         print(colored("\n🐾 evaluating beliefs...", "blue"))
-        completion = self.client.beta.chat.completions.create(
-            model="gpt-40-mini",
+        completion = self.client.beta.chat.completions.parse(
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": self._get_system_prompt()},
                 {"role": "user", "content": self._create_prompt(context)}
@@ -39,7 +39,7 @@ class BeliefSystem(MindComponent):
 
         new_belief = completion.choices[0].message.parsed
         self._update_beliefs(new_belief)
-        self.logger.log_beliefs(new_belief)
+        self.logger.log_to_file('beliefs.jsonl', new_belief.to_dict())
 
     def _update_beliefs(self, new_belief: Belief):
         """Update existing beliefs or add new ones"""
@@ -77,5 +77,5 @@ class BeliefSystem(MindComponent):
 
     def _log_belief(self, belief: Belief):
         """Log the belief"""
-        belief_data = belief.dict()
+        belief_data = belief.to_dict()
         self.logger.log_beliefs('beliefs.jsonl', belief_data)

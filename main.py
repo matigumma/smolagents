@@ -1,6 +1,7 @@
-from dotenv import load_dotenv  # Add this import at the top
+import asyncio
 import os
-
+from dotenv import load_dotenv
+from openai import Client as OpenAi
 # huggingface code interpreter based agent system
 from smolagents import CodeAgent, MultiStepAgent, ManagedAgent, ToolCollection, ToolCallingAgent, DuckDuckGoSearchTool, LiteLLMModel, HfApiModel, TOOL_CALLING_SYSTEM_PROMPT # default model = Qwen/Qwen2.5-Coder-32B-Instruct # for free
 from huggingface_hub import login
@@ -16,6 +17,8 @@ from opentelemetry.sdk.trace import TracerProvider
 from openinference.instrumentation.smolagents import SmolagentsInstrumentor
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.trace.export import ConsoleSpanExporter, SimpleSpanProcessor
+
+from mind import Mind
 
 endpoint = "http://0.0.0.0:6006/v1/traces"
 trace_provider = TracerProvider()
@@ -43,8 +46,8 @@ login(hf_api_key)
 
 ## openai over LiteLLM proxy - gpt-4o-mini to response
 
-openai_model = LiteLLMModel(model_id="gpt-4o-mini")
-openai_model.set_verbose=True
+# openai_model = LiteLLMModel(model_id="gpt-4o-mini")
+# openai_model.set_verbose=True
 
 # openai_agent = CodeAgent(tools=[], model=openai_model, add_base_tools=True)
 
@@ -146,27 +149,33 @@ openai_model.set_verbose=True
 ## multi-agent system
 
 
-msagent = ToolCallingAgent(
-    tools=[DuckDuckGoSearchTool()],
-    model=HfApiModel(),
-    max_steps=1,
-)
-# We then wrap this agent into a ManagedAgent 
-magent = ManagedAgent(
-    agent=msagent,
-    name="Managed Agent",
-    description="A managed agent for handling complex tasks",
-    additional_prompting="Please provide more details about your request.",
-    provide_run_summary=True,
-    managed_agent_prompt="Managed Agent: {name} is ready to assist you. Please provide your task or question.",
-)
-# that will make it callable by its manager agent
-manager_agent = CodeAgent(
-    tools=[],
-    model=HfApiModel(),
-    managed_agents=[magent],
-)
+# msagent = ToolCallingAgent(
+#     tools=[DuckDuckGoSearchTool()],
+#     model=HfApiModel(),
+#     max_steps=1,
+# )
+# # We then wrap this agent into a ManagedAgent 
+# magent = ManagedAgent(
+#     agent=msagent,
+#     name="Managed Agent",
+#     description="A managed agent for handling complex tasks",
+#     additional_prompting="Please provide more details about your request.",
+#     provide_run_summary=True,
+#     managed_agent_prompt="Managed Agent: {name} is ready to assist you. Please provide your task or question.",
+# )
+# # that will make it callable by its manager agent
+# manager_agent = CodeAgent(
+#     tools=[],
+#     model=HfApiModel(),
+#     managed_agents=[magent],
+# )
 
-answer = manager_agent.run("how many letters cand represent with 4 bits?")
+# answer = manager_agent.run("how many letters cand represent with 4 bits?")
 
-print(answer)
+# print(answer)
+
+openai = OpenAi(api_key=openai_api_key)
+
+mind = Mind(openai)
+
+asyncio.run(mind.run())

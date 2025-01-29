@@ -1,12 +1,13 @@
 from typing import Dict
-from mind import MindComponent
+from components import MindComponent
 from models import Question
 from termcolor import colored
 
 class EmotionalProcessor(MindComponent):
     def _get_system_prompt(self) -> str:
         return """You are the emotional processing center of a mind.
-        Generate emotional responses and associated thoughts based on current context."""
+        Generate emotional responses and associated thoughts based on current context.
+        Please respond in JSON format."""
 
     def _create_prompt(self, context: Dict) -> str:
         return f"Given the current situation: {context.get('situation', '')}, " \
@@ -16,7 +17,8 @@ class EmotionalProcessor(MindComponent):
 class RationalAnalyzer(MindComponent):
     def _get_system_prompt(self) -> str:
         return """You are the rational analysis center of a mind.
-        Generate logical thoughts and analytical observations based on current context."""
+        Generate logical thoughts and analytical observations based on current context.
+        Please respond in JSON format."""
 
     def _create_prompt(self, context: Dict) -> str:
         return f"Analyze this situation logically: {context.get('situation', '')}"
@@ -25,7 +27,8 @@ class QuestionGenerator(MindComponent):
     def _get_system_prompt(self) -> str:
         return """You are the curiosity center of a mind. Generate meaningful questions
         based on current thoughts, context, and the initial exploration topic. Focus on deep,
-        exploratory questions that build upon previous insights."""
+        exploratory questions that build upon previous insights.
+        Please respond in JSON format."""
 
     def _create_prompt(self, context: Dict) -> str:
         thoughts = context.get('active_thoughts', [])
@@ -40,8 +43,8 @@ class QuestionGenerator(MindComponent):
     async def generate_question(self, context:Dict) -> Question:
         print(colored(f"\n ❓ generating question...", "magenta"))
 
-        completion = self.client.beta.chat.completions.create(
-            model="gpt-4-mini",
+        completion = self.client.beta.chat.completions.parse(
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": self.get_system_prompt()},
                 {"role": "user", "content": self._create_prompt(context)}

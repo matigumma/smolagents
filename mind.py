@@ -1,84 +1,149 @@
 import json
 import os
-from termcolor import colored
 from openai import OpenAI
-from typing import Dict, Any
+from typing import Dict, Any, List
+import time
+from typing import List
 
-from models import Thought
+from termcolor import colored
 
-class MindLogger:
-    def __init__(self, save_dir: str):
-        self.save_dir = save_dir
-        os.makedirs(save_dir, exist_ok=True)
-
-    def log_to_file(self, filename: str, data: Dict[str, Any]):
-        filepath = os.path.join(self.save_dir, filename)
-        with open(filepath, 'a') as f:
-            json_str = json.dumps(data)
-            f.write(json_str + '\n')
-            f.flush()  # Ensure immediate writing to file
+from components import MindLogger
+from beliefs import BeliefSystem
+from conclusions import ConclusionGenerator
+from controllers import EmotionalProcessor, QuestionGenerator, RationalAnalyzer
+from models import ConsciousState, EmotionalState, Question, Thought
+from ms import SAVE_DIR, MemorySystem
 
 
-class MindComponent:
-    def __init__(self, name: str, client: OpenAI):
-        self.name = name
-        self.client = client
 
-    async def generate_thought(self, context: Dict) -> Thought:
-        """Generate a thought based on current context"""
-        print(colored(f"{self.name.title()} component generating thought...", "cyan"))
-        prompt = self.create_prompt(context)
-        print(colored(f"  Using prompt: {prompt}", "cyan", attrs=["dark"]))
-
-        completion = self.client.beta.chat.completions.create(
-            model="gpt-4-mini",
-            messages=[
-                {"role": "system", "content": self.get_system_prompt()},
-                {"role": "user", "content": prompt}
-            ],
-            response_format={"type": "json_object"}
+class Mind:
+    def __init__(self, openai_client: OpenAI):
+        self.client = openai_client
+        self.logger = MindLogger(SAVE_DIR)
+        self.components = {
+            'emotional': EmotionalProcessor('emotional', self.client),
+            'rational': RationalAnalyzer('rational', self.client),
+            'memory': MemorySystem('memory', self.client, self.logger),
+            'curiosity': QuestionGenerator('curiosity', self.client),
+            'belief': BeliefSystem('belief', self.client, self.logger),
+            'conclusion': ConclusionGenerator('conclusion', self.client, self.logger),
+        }
+        self.conscious_state = ConsciousState(
+            active_thoughts=[],
+            dominant_emotion=EmotionalState.NEUTRAL,
+            attention_focus="idle",
+            arousal_level=0.5
         )
+        self.questions: List[Question] = []
+        self.initial_situation = None
 
-        thought_content = completion.choices[0].message.content
-        thought = Thought(thought_content)
-        print(colored(f"  Generated thought: {thought.content}", "cyan"))
-        return thought
+    def log_thought(self, thought: Thought):
+        thought_data = thought.to_dict()
+        self.logger.log_to_file('thoughts.jsonl', thought_data)
 
-    def get_system_prompt(self) -> str:
-        raise NotImplementedError
+    def log_question(self, question: Question):
+        question_data = question.to_dict()
+        self.logger.log_to_file('questions.jsonl', question_data)
+    
+    async def generate_new_question(self) -> str:
+        """Generates a new question based in the current state"""
+        context = {
+            'active_thoughts': self.conscious_state.active_thoughts,
+            'situation': self.conscious_state.attention_focus,
+            'emotion': self.conscious_state.dominant_emotion,
+            'initial_situation': self.initial_situation
+        }
 
-    def create_prompt(self, context: Dict) -> str:
-        raise NotImplementedError
 
+        question = await self.components['curiosity'].generate_question(context)
 
+        self.questions.append(question)
+        self.log_question(question)
+        return question.content
+    
+    async def process_situation(self, situation: str):
+        print(colored(f"\n> Processing situation: {situation}", "magenta", attrs=["bold"]))
+        print(colored("=" * 50, "magenta"))
 
+        context = {
+            'situation': situation,
+            'current_emotion': self.conscious_state.dominant_emotion,
+            'arousal_level': self.conscious_state.arousal_level
+        }
 
-# class Mind:
-#     def __init__(self, openai_client: OpenAI):
-#         self.client = openai_client
-#         self.logger = MindLogger(SAVE_DIR)
-#         self.components = {
-#             'emotional': EmotionalProcessor('emotional', self.client),
-#             # 'rational': RationalAnalyzer('rational', self.client),
-#             'memory': MemorySystem('memory', self.client, self.logger),
-#             # 'curiosity': QuestionGenerator('curiosity', self.client),
-#             # 'belief': BeliefSystem('belief', self.client, self.logger),
-#             # 'conclusion': ConclusionGenerator('conclusion', self.client, self.logger),
-#         }
-#         self.conscious_state = ConsciousState(
-#             active_thoughts=[],
-#             dominant_emotion=EmotionalState.NEUTRAL,
-#             attention_focus="idle",
-#             arousal_level=0.5
-#         )
-#         self.questions: List[Question] = []
-#         self.initial_situation = None
+        print(colored(f"\n Current state", "blue"))
+        print(colored(f"\n  L Emotion: {self.conscious_state.dominant_emotion}", "blue"))
+        print(colored(f"\n  L Arousal: {self.conscious_state.arousal_level}", "blue"))
 
-#     def log_state(self):
-#         state_data = {
-#             'dominant_emotion': self.conscious_state.dominant_emotion,
-#             'attention_focus': self.conscious_state.attention_focus,
-#             'arousal_level': self.conscious_state.arousal_level,
-#             'active_thoughts_count': len(self.conscious_state.active_thoughts)
-#         }
-#         self.logger.log_to_file('states.json', state_data)
+        print(colored(f"\n Generating component responses", "green"))
+        emotional_thought = await self.components['emotional'].generate_thought(context)
+        time.sleep(1)
+        rational_thought = await self.components['rational'].generate_thought(context)
+
+        self.log_thought(emotional_thought)
+        self.log_thought(rational_thought)
+
+        print(colored(f"\n Storing new thoughts on memory", "yellow"))
+        memory_system = self.components['memory']
+        await memory_system.store_memory(emotional_thought)
+        await memory_system.store_memory(rational_thought)
+
+        relevant_memories = await memory_system.retrieve_relevant_memories(context, num_memories=3, similarity_threshold=0.9)
+
+        print(colored(f"\n Updating conscious state", "magenta"))
+
+        self.conscious_state.active_thoughts = [emotional_thought, rational_thought] + relevant_memories
+        old_emotion = self.conscious_state.dominant_emotion
+        self.conscious_state.dominant_emotion = self.determine_dominant_emotion()
+        self.conscious_state.attention_focus = situation
+
+        print(colored(f"\n Updated state", "blue"))
+        print(colored(f"\n  L Emotion: {old_emotion} -> {self.conscious_state.dominant_emotion}", "blue"))
+        print(colored(f"\n  L Attention: {self.conscious_state.attention_focus}", "blue"))
+        print(colored(f"\n  L Active Thoughts: {self.conscious_state.active_thoughts}", "blue"))
+        print(colored("=" * 50 + "\n", "magenta"))
+
+        belief_context = {
+            'active_thoughts': self.conscious_state.active_thoughts,
+            'situation': situation,
+            'emotion': self.conscious_state.dominant_emotion,
+        }
+
+        await self.components['belief'].evaluate_beliefs(belief_context)
+
+    def determine_dominant_emotion(self):
+        """Determine dominant emotion based on active thoughts"""
+        if not self.conscious_state.active_thoughts:
+            return EmotionalState.NEUTRAL
+        
+        emotions_count ={}
+        max_intensity = 0
+        dominant_emotion = EmotionalState.NEUTRAL
+
+        for thought in self.conscious_state.active_thoughts:
+            if thought.intensity > max_intensity:
+                max_intensity = thought.intensity
+                dominant_emotion = thought.emotion
+
+            if thought.emotion in emotions_count:
+                emotions_count[thought.emotion] += 1
+            else:
+                emotions_count[thought.emotion] = 1
+        
+        return dominant_emotion
+
+    async def explore(self, situation: str):
+        await self.process_situation(situation)
+        await self.generate_new_question()
+
+        while True:
+            user_input = input("Enter a response (or 'q' to quit): ")
+            if user_input.lower() == 'q':
+                break
+            await self.process_situation(user_input)
+            await self.generate_new_question()
+
+        print("Goodbye!")
+
+    async def run(self):
+        await self.explore(self.initial_situation)

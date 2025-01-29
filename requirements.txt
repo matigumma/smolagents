@@ -68,7 +68,7 @@ mpmath==1.3.0
 multidict==6.1.0
 namex==0.0.8
 networkx==3.4.2
-numpy==2.0.2
+numpy<2
 openai==1.60.1
 openinference-instrumentation==0.1.21
 openinference-instrumentation-smolagents==0.1.1
